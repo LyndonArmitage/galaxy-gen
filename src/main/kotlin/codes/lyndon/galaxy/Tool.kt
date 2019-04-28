@@ -2,9 +2,13 @@ package codes.lyndon.galaxy
 
 import org.apache.commons.math3.random.MersenneTwister
 import org.apache.commons.math3.random.RandomDataGenerator
+import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
+import java.awt.event.KeyEvent
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
@@ -37,22 +41,18 @@ class Tool(
 
     fun start() {
 
-        val mainPanel = JPanel(FlowLayout())
 
         val controlsPanel = makeControlsPanel()
         val renderPanel = makeRenderPanel()
-
-        mainPanel.add(controlsPanel)
-        mainPanel.add(renderPanel)
-
+        val mainPanel = JSplitPane(JSplitPane.VERTICAL_SPLIT, renderPanel, controlsPanel)
+        mainPanel.setDividerLocation(1.0)
 
         frame.add(mainPanel)
         // default size
-        frame.setSize(800, 600)
+        frame.minimumSize = Dimension(800, 600)
         frame.pack()
         frame.isVisible = true
         frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-
     }
 
     private fun makeControlsPanel(): JPanel {
@@ -235,34 +235,24 @@ class Tool(
             c
         )
 
-        generateButton.addActionListener {
+        val action  = object : AbstractAction("generate") {
+            override fun actionPerformed(e: ActionEvent?) {
+                runGenerator(
+                    randomSeedTickBox,
+                    seedModel,
+                    starCountModel,
+                    armCountModel,
+                    galaxyRadiusModel,
+                    armRadiusModel,
+                    spinFactorModel,
+                    saveImageButton
+                )
 
-            val useRandomSeed = randomSeedTickBox.isSelected
-
-            val seed = if (useRandomSeed) {
-                val newSeed = random.nextLong(Long.MIN_VALUE, Long.MAX_VALUE)
-                seedModel.value = newSeed
-                newSeed
-            } else {
-                seedModel.number.toLong()
             }
-            val starCount = starCountModel.number.toInt()
-            val armCount = armCountModel.number.toInt()
-            val galaxyRadius = galaxyRadiusModel.number.toDouble()
-            val armRadius = armRadiusModel.number.toDouble()
-            val spinFactor = spinFactorModel.number.toDouble()
 
-            generate(
-                seed,
-                starCount,
-                armCount,
-                galaxyRadius,
-                armRadius,
-                spinFactor
-            )
-            saveImageButton.isEnabled = true
         }
 
+        generateButton.addActionListener(action)
 
         saveImageButton.addActionListener {
             if (!saveImageButton.isEnabled) {
@@ -290,10 +280,47 @@ class Tool(
         return panel
     }
 
-    private fun makeRenderPanel(): JPanel {
-        val panel = JPanel()
-        panel.add(renderPane)
-        return panel
+    private fun runGenerator(
+        randomSeedTickBox: JCheckBox,
+        seedModel: SpinnerNumberModel,
+        starCountModel: SpinnerNumberModel,
+        armCountModel: SpinnerNumberModel,
+        galaxyRadiusModel: SpinnerNumberModel,
+        armRadiusModel: SpinnerNumberModel,
+        spinFactorModel: SpinnerNumberModel,
+        saveImageButton: JButton
+    ) {
+        val useRandomSeed = randomSeedTickBox.isSelected
+
+        val seed = if (useRandomSeed) {
+            val newSeed = random.nextLong(Long.MIN_VALUE, Long.MAX_VALUE)
+            seedModel.value = newSeed
+            newSeed
+        } else {
+            seedModel.number.toLong()
+        }
+        val starCount = starCountModel.number.toInt()
+        val armCount = armCountModel.number.toInt()
+        val galaxyRadius = galaxyRadiusModel.number.toDouble()
+        val armRadius = armRadiusModel.number.toDouble()
+        val spinFactor = spinFactorModel.number.toDouble()
+
+        generate(
+            seed,
+            starCount,
+            armCount,
+            galaxyRadius,
+            armRadius,
+            spinFactor
+        )
+        saveImageButton.isEnabled = true
+    }
+
+    private fun makeRenderPanel(): JScrollPane {
+        renderPane.minimumSize = Dimension(800, 600)
+        renderPane.verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_ALWAYS
+        renderPane.horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS
+        return renderPane
     }
 
     private fun generate(
